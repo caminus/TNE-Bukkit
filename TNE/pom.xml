@@ -138,6 +138,12 @@
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>com.lishid</groupId>
+            <artifactId>openinvapi</artifactId>
+            <version>4.1.5</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- Part of Java EE, removed from Java SE in JDK11 -->
         <dependency>
             <groupId>javax.xml.bind</groupId>

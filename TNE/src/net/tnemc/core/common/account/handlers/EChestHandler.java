@@ -5,6 +5,11 @@ import net.tnemc.core.common.currency.TNECurrency;
 import net.tnemc.core.common.utils.MISCUtils;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.inventory.Inventory;
+import com.lishid.openinv.IOpenInv;
+import com.lishid.openinv.internal.ISpecialEnderChest;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -37,7 +42,25 @@ public class EChestHandler implements HoldingsHandler {
       } else {
         final OfflinePlayer offlinePlayer = MISCUtils.getOfflinePlayer(account);
         if(offlinePlayer != null) {
-
+          Plugin invPlugin = Bukkit.getServer().getPluginManager().getPlugin("OpenInv");
+          if (invPlugin != null) {
+              IOpenInv openInv = (IOpenInv)invPlugin;
+              Player loadedPlayer = openInv.loadPlayer(offlinePlayer);
+              if (loadedPlayer != null) {
+                ISpecialEnderChest specialEnderInv;
+                try {
+                  specialEnderInv = openInv.getSpecialEnderChest(loadedPlayer, false);
+                } catch (InstantiationException e) {
+                  return BigDecimal.ZERO;
+                }
+                Inventory enderInventory = specialEnderInv.getBukkitInventory();
+                return ItemCalculations.getCurrencyItems(currency, enderInventory);
+              } else {
+                  return BigDecimal.ZERO;
+              }
+          } else {
+              return BigDecimal.ZERO;
+          }
         }
       }
     }
@@ -70,7 +93,34 @@ public class EChestHandler implements HoldingsHandler {
       } else {
         final OfflinePlayer offlinePlayer = MISCUtils.getOfflinePlayer(account);
         if(offlinePlayer != null) {
+          Plugin invPlugin = Bukkit.getServer().getPluginManager().getPlugin("OpenInv");
+          if (invPlugin != null) {
+              IOpenInv openInv = (IOpenInv)invPlugin;
+              Player loadedPlayer = openInv.loadPlayer(offlinePlayer);
+              if (loadedPlayer == null) {
+                  return amount;
+              }
+              ISpecialEnderChest specialEnderInv;
+              try {
+                specialEnderInv = openInv.getSpecialEnderChest(loadedPlayer, false);
+              } catch (InstantiationException e) {
+                return amount;
+              }
+              Inventory enderInventory = specialEnderInv.getBukkitInventory();
 
+              BigDecimal holdings = ItemCalculations.getCurrencyItems(currency, enderInventory);
+
+              if(holdings.compareTo(amount) < 0) {
+                ItemCalculations.clearItems(currency, enderInventory);
+                return amount.subtract(holdings);
+              }
+              ItemCalculations.setItems(account, currency, holdings.subtract(amount), enderInventory, true);
+              loadedPlayer.saveData();
+              //openInv.unload(offlinePlayer);
+              return BigDecimal.ZERO;
+          } else {
+              return amount;
+          }
         }
       }
     }
